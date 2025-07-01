@@ -20,6 +20,8 @@ Q_OBJECT
     void on_btnTogglePlots_clicked();
 
  private:
-    Ui::MainWindow *ui;
+    void loadPlot(PlotIdx plotIdx);
+
+Ui::MainWindow *ui;
     PlotController pc;
 };

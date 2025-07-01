@@ -1,10 +1,9 @@
 #pragma once
 
-#include <qcustomplot.h>
+#include <QVector>
 
 typedef struct {
     QVector<double> x, y;
-    QCPGraph *graph;  // TODO: вынести
     bool isLower;
 } SubPlot;
 

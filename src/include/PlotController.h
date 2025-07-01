@@ -5,16 +5,20 @@
 
 enum class PlotIdx { FIRST = 1, SECOND = 2 };
 
+using CoordPair = QPair<double, double>;
+using CoordListPair = QPair<QVector<double>, QVector<double>>;
+
 class PlotController {
  public:
     void init(QCustomPlot *customPlot);
-    void loadPlotFromFile(PlotIdx idx);  // TODO: расформировать, pair
+    static CoordListPair loadCoordsFromFile(const QString& fileName);
+    void setPlot(const CoordListPair& clp, PlotIdx plotIdx);
+    void redrawPlots();
     void togglePlots();
 
  private:
-    static void parseLineToCoords(  // TODO: pair
-        const QString& line, QVector<double>& x, QVector<double>& y);
-    void setSubPlots();  // TODO: убрать
+    static CoordPair parseLineToCoords(const QString& line);
+    void setGraphs();
     void setPens();
 
     QCustomPlot *plot = nullptr;
@@ -28,4 +32,5 @@ class PlotController {
 
     QVector<double> x1, y1, x2, y2;
     QList<SubPlot> firstPlot, secondPlot;
+    QList<QCPGraph*> firstGraph, secondGraph;
 };

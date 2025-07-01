@@ -1,6 +1,4 @@
 #include "PlotController.h"
-#include <QFileDialog>
-#include <QMessageBox>
 #include <QTextStream>
 
 void PlotController::init(QCustomPlot* customPlot) {
@@ -13,44 +11,53 @@ void PlotController::init(QCustomPlot* customPlot) {
     penBottom2 = QPen(PEN_SECOND_COLOR, PEN_BOTTOM_WIDTH, PEN_BOTTOM_STYLE);
 }
 
-void PlotController::loadPlotFromFile(PlotIdx idx) {
-    QString fileName = QFileDialog::getOpenFileName(
-            nullptr, "Load Plot from File", "./", "");
-    if (fileName.isEmpty()) return;
-
+CoordListPair PlotController::loadCoordsFromFile(const QString& fileName) {
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(nullptr, "Error",
-            "Failed to open file.");
-        return;
+        throw std::runtime_error("Failed to open file.");
     }
 
     QVector<double> x, y;
     QTextStream in(&file);
     while (!in.atEnd()) {
-        parseLineToCoords(in.readLine(), x, y);
+        QString line = in.readLine();
+        if (line.isEmpty()) continue;
+        try {
+            auto coordPair = parseLineToCoords(line);
+            x.append(coordPair.first);
+            y.append(coordPair.second);
+        } catch (std::runtime_error &e) {
+            qDebug() << e.what();
+        }
     }
     if (x.isEmpty()) {
-        QMessageBox::warning(nullptr, "Error",
-            "No plot data has been parsed from file.");
-        return;
+        throw std::runtime_error("No plot data has been parsed from file.");
     }
 
-    if (idx == PlotIdx::FIRST) {
-        x1 = x;
-        y1 = y;
+    return qMakePair(x, y);
+}
+
+void PlotController::setPlot(const CoordListPair& clp, PlotIdx plotIdx) {
+    if (plotIdx == PlotIdx::FIRST) {
+        x1 = clp.first;
+        y1 = clp.second;
     } else {
-        x2 = x;
-        y2 = y;
+        x2 = clp.first;
+        y2 = clp.second;
     }
+}
 
-    setSubPlots();
+void PlotController::redrawPlots() {
+    PlotSplitter ps(x1, y1, x2, y2);
+    auto plotPair = ps.split();
+    firstPlot = plotPair.first;
+    secondPlot = plotPair.second;
+
+    plot->clearGraphs();
+    setGraphs();
     plot->rescaleAxes();
     setPens();
     plot->replot();
-
-    QMessageBox::information(nullptr, "Success",
-        QString("Plot %1 loaded successfully").arg(static_cast<int>(idx)));
 }
 
 void PlotController::togglePlots() {
@@ -60,14 +67,10 @@ void PlotController::togglePlots() {
     plot->replot();
 }
 
-void PlotController::parseLineToCoords(
-    const QString& line, QVector<double>& x, QVector<double>& y) {
-    if (line.isEmpty()) return;
-
+CoordPair PlotController::parseLineToCoords(const QString& line) {
     QStringList parts = line.split("\t");
     if (parts.size() != 2) {
-        qDebug() << "Invalid line: " << line;
-        return;
+        throw std::runtime_error("Invalid line: " + line.toStdString());
     }
 
     bool xIsOk, yIsOk;
@@ -75,52 +78,44 @@ void PlotController::parseLineToCoords(
     double newY = parts[1].toDouble(&yIsOk);
 
     if (!xIsOk || !yIsOk) {
-        if (!xIsOk) qDebug() << "Failed to parse x value: " << parts[0];
-        if (!yIsOk) qDebug() << "Failed to parse y value: " << parts[1];
-        return;
+        if (!xIsOk) throw std::runtime_error(
+            "Failed to parse x value: " + parts[0].toStdString());
+        if (!yIsOk) throw std::runtime_error(
+            "Failed to parse y value: " + parts[1].toStdString());
     }
 
-    x.append(newX);
-    y.append(newY);
+    return qMakePair(newX, newY);
 }
 
-void PlotController::setSubPlots() {
-    for (const auto &sp : firstPlot) plot->removeGraph(sp.graph);
-    for (const auto &sp : secondPlot) plot->removeGraph(sp.graph);
-    firstPlot.clear();
-    secondPlot.clear();
-
-    PlotSplitter ps(x1, y1, x2, y2);
-    auto plotPair = ps.split();
-    firstPlot = plotPair.first;
-    secondPlot = plotPair.second;
-
+void PlotController::setGraphs() {
+    firstGraph.clear();
+    secondGraph.clear();
     for (auto &sp : firstPlot) {
-        sp.graph = plot->addGraph();
-        sp.graph->setData(sp.x, sp.y);
+        firstGraph.append(plot->addGraph());
+        firstGraph.last()->setData(sp.x, sp.y);
     }
     for (auto &sp : secondPlot) {
-        sp.graph = plot->addGraph();
-        sp.graph->setData(sp.x, sp.y);
+        secondGraph.append(plot->addGraph());
+        secondGraph.last()->setData(sp.x, sp.y);
     }
 }
 
 void PlotController::setPens() {
     if (bottomIdx == PlotIdx::SECOND) {
-        for (auto &sp : secondPlot) {
-            if (sp.isLower) sp.graph->setPen(penBottom2);
-            else sp.graph->setPen(penTop2);
+        for (int i = 0; i < secondPlot.size(); ++i) {
+            if (secondPlot[i].isLower) secondGraph[i]->setPen(penBottom2);
+            else secondGraph[i]->setPen(penTop2);
         }
-        for (auto &sp : firstPlot) {
-            sp.graph->setPen(penTop1);
+        for (int i = 0; i < firstPlot.size(); ++i) {
+            firstGraph[i]->setPen(penTop1);
         }
     } else {
-        for (auto &sp : firstPlot) {
-            if (sp.isLower) sp.graph->setPen(penBottom1);
-            else sp.graph->setPen(penTop1);
+        for (int i = 0; i < firstPlot.size(); ++i) {
+            if (firstPlot[i].isLower) firstGraph[i]->setPen(penBottom1);
+            else firstGraph[i]->setPen(penTop1);
         }
-        for (auto &sp : secondPlot) {
-            sp.graph->setPen(penTop2);
+        for (int i = 0; i < secondPlot.size(); ++i) {
+            secondGraph[i]->setPen(penTop2);
         }
     }
 }

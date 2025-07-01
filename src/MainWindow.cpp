@@ -13,13 +13,29 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::on_btnLoadPlot1_clicked() {
-    pc.loadPlotFromFile(PlotIdx::FIRST);
+    loadPlot(PlotIdx::FIRST);
 }
 
 void MainWindow::on_btnLoadPlot2_clicked() {
-    pc.loadPlotFromFile(PlotIdx::SECOND);
+    loadPlot(PlotIdx::SECOND);
 }
 
 void MainWindow::on_btnTogglePlots_clicked() {
     pc.togglePlots();
+}
+
+void MainWindow::loadPlot(PlotIdx plotIdx) {
+    QString fileName = QFileDialog::getOpenFileName(nullptr,
+        "Load Plot from File", "./", "");
+    if (fileName.isEmpty()) return;
+
+    try {
+        auto coordListPair = pc.loadCoordsFromFile(fileName);
+        pc.setPlot(coordListPair, plotIdx);
+        pc.redrawPlots();
+        QMessageBox::information(nullptr, "Success", QString(
+            "Plot %1 loaded successfully").arg(static_cast<int>(plotIdx)));
+    } catch (const std::runtime_error &e) {
+        QMessageBox::warning(nullptr, "Error", e.what());
+    }
 }
