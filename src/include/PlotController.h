@@ -8,14 +8,14 @@ enum class PlotIdx { FIRST = 1, SECOND = 2 };
 class PlotController {
  public:
     void init(QCustomPlot *customPlot);
-    void loadPlotFromFile(PlotIdx idx);
+    void loadPlotFromFile(PlotIdx idx);  // TODO: расформировать, pair
     void togglePlots();
 
  private:
-    static void parseLineToCoords(
+    static void parseLineToCoords(  // TODO: pair
         const QString& line, QVector<double>& x, QVector<double>& y);
-    void setSubPlots();
-    void setPensAndReplot();
+    void setSubPlots();  // TODO: убрать
+    void setPens();
 
     QCustomPlot *plot = nullptr;
     PlotIdx bottomIdx = PlotIdx::SECOND;

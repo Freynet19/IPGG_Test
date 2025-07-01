@@ -4,7 +4,7 @@
 
 typedef struct {
     QVector<double> x, y;
-    QCPGraph *graph;
+    QCPGraph *graph;  // TODO: вынести
     bool isLower;
 } SubPlot;
 
@@ -13,7 +13,7 @@ class PlotSplitter {
     PlotSplitter(const QVector<double>& x1, const QVector<double>& y1,
         const QVector<double>& x2, const QVector<double>& y2,
         QList<SubPlot>& firstPlot, QList<SubPlot>& secondPlot);
-    void split();
+    void split();  // TODO: return pair
 
  private:
     void addIntersectionIfExists(

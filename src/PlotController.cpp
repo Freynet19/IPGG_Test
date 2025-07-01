@@ -46,7 +46,8 @@ void PlotController::loadPlotFromFile(PlotIdx idx) {
 
     setSubPlots();
     plot->rescaleAxes();
-    setPensAndReplot();
+    setPens();
+    plot->replot();
 
     QMessageBox::information(nullptr, "Success",
         QString("Plot %1 loaded successfully").arg(static_cast<int>(idx)));
@@ -55,7 +56,8 @@ void PlotController::loadPlotFromFile(PlotIdx idx) {
 void PlotController::togglePlots() {
     if (bottomIdx == PlotIdx::SECOND) bottomIdx = PlotIdx::FIRST;
     else bottomIdx = PlotIdx::SECOND;
-    setPensAndReplot();
+    setPens();
+    plot->replot();
 }
 
 void PlotController::parseLineToCoords(
@@ -101,7 +103,7 @@ void PlotController::setSubPlots() {
     }
 }
 
-void PlotController::setPensAndReplot() {
+void PlotController::setPens() {
     if (bottomIdx == PlotIdx::SECOND) {
         for (auto &sp : secondPlot) {
             if (sp.isLower) sp.graph->setPen(penBottom2);
@@ -119,5 +121,4 @@ void PlotController::setPensAndReplot() {
             sp.graph->setPen(penTop2);
         }
     }
-    plot->replot();
 }
