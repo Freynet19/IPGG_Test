@@ -90,8 +90,10 @@ void PlotController::setSubPlots() {
     firstPlot.clear();
     secondPlot.clear();
 
-    PlotSplitter ps(x1, y1, x2, y2, firstPlot, secondPlot);
-    ps.split();
+    PlotSplitter ps(x1, y1, x2, y2);
+    auto plotPair = ps.split();
+    firstPlot = plotPair.first;
+    secondPlot = plotPair.second;
 
     for (auto &sp : firstPlot) {
         sp.graph = plot->addGraph();

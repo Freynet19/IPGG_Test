@@ -1,10 +1,8 @@
 #include "PlotSplitter.h"
 
 PlotSplitter::PlotSplitter(const QVector<double>& x1, const QVector<double>& y1,
-    const QVector<double>& x2, const QVector<double>& y2,
-    QList<SubPlot>& firstPlot, QList<SubPlot>& secondPlot)
-        : x1(x1), y1(y1), x2(x2), y2(y2),
-        firstPlot(firstPlot), secondPlot(secondPlot) {}
+    const QVector<double>& x2, const QVector<double>& y2)
+    : x1(x1), y1(y1), x2(x2), y2(y2) {}
 
 void PlotSplitter::addIntersectionIfExists(
     double x1a, double y1a, double x1b, double y1b,
@@ -71,16 +69,17 @@ void PlotSplitter::findIntersections() {
     }
 }
 
-void PlotSplitter::splitSinglePlot(QList<SubPlot>& result,
+QList<SubPlot> PlotSplitter::splitSinglePlot(
     const QVector<double>& xThisList, const QVector<double>& yThisList,
     const QVector<double>& xOtherList, const QVector<double>& yOtherList) {
+    QList<SubPlot> result;
     if (xIntList.isEmpty()) {
         SubPlot sp;
         sp.x = xThisList;
         sp.y = yThisList;
         sp.isLower = false;
         result.append(sp);
-        return;
+        return result;
     }
 
     QVector<double> xSubPlotList, ySubPlotList;
@@ -115,7 +114,7 @@ void PlotSplitter::splitSinglePlot(QList<SubPlot>& result,
         xSubPlotList.append(xThisList[i]);
         ySubPlotList.append(yThisList[i]);
     }
-    if (xSubPlotList.size() < 2) return;
+    if (xSubPlotList.size() < 2) return result;
 
     // after the last intersection point
     SubPlot sp;
@@ -126,10 +125,12 @@ void PlotSplitter::splitSinglePlot(QList<SubPlot>& result,
     double yOtherComp = yInterpolation(xOtherList, yOtherList, xCompare);
     sp.isLower = yThisComp < yOtherComp;
     result.append(sp);
+    return result;
 }
 
-void PlotSplitter::split() {
+PlotPair PlotSplitter::split() {
     findIntersections();
-    splitSinglePlot(firstPlot, x1, y1, x2, y2);
-    splitSinglePlot(secondPlot, x2, y2, x1, y1);
+    auto firstPlot = splitSinglePlot(x1, y1, x2, y2);
+    auto secondPlot = splitSinglePlot(x2, y2, x1, y1);
+    return qMakePair(firstPlot, secondPlot);
 }
